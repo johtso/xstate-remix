@@ -16,8 +16,8 @@ createMachine({
       tickets: {[key: TicketType]: number};
     },
     events: {} as
-      | { type: "SEAT_SELECTION"; selections: string[] }
-      | { type: "CONFIRM_SEATS"; }
+      | { type: "UPDATE_SEAT_SELECTION"; selections?: string[] }
+      | { type: "CONFIRM_SEAT_SELECTION"; }
       | { type: "USE_VOUCHERS"; }
       | { type: "PAY"; }
   },
@@ -29,10 +29,10 @@ createMachine({
   states: {
     seats: {
       on: {
-        SEAT_SELECTION: {
+        UPDATE_SEAT_SELECTION: {
           actions: "storeSeatSelection"
         },
-        CONFIRM_SEATS: {
+        CONFIRM_SEAT_SELECTION: {
           target: "tickets",
         },
       },
@@ -66,7 +66,9 @@ createMachine({
         // if event.selections contains the index, set the value to true in the new array
         // else set the value to false
         // return the new array
-        return ctx.seats.map((_, index) => event.selections.includes(index.toString()));
+        console.log("trying to store seat selection", event);
+        const selections = event.selections || [];
+        return ctx.seats.map((_, index) => selections.includes(index.toString()));
       },
     })
   }

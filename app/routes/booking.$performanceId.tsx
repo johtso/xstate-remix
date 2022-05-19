@@ -1,6 +1,6 @@
 import { LoaderFunction, json, redirect, ActionFunction } from "@remix-run/node";
 import { Outlet, useLoaderData } from "@remix-run/react";
-import { AnyEventObject, interpret, StateFrom } from "xstate";
+import { AnyEventObject, EventFrom, interpret, StateFrom } from "xstate";
 import * as cookies from "~/cookies";
 import { deserializeState, serializeState, stateValueToPath, asyncInterpret } from "~/machines/utils";
 import { bookingMachine } from "~/machines/booking.machine";
@@ -21,29 +21,27 @@ const performances = {
 } as { [id: string]: PerformanceType };
 
 export const loader: LoaderFunction = async ({ request, params }) => {
-  // const session = await getSession(
-  //   request.headers.get("Cookie")
-  // );
+  const session = await getSession(
+    request.headers.get("Cookie")
+  );
 
   const performanceId = params.performanceId!;
-  if (!Object.keys(performances).includes(performanceId)) {
-    throw new Response("No Performance With That ID", {
-      status: 404,
-    });
-  }
+  // if (!Object.keys(performances).includes(performanceId)) {
+  //   throw new Response("No Performance With That ID", {
+  //     status: 404,
+  //   });
+  // }
   const performance = performances[performanceId as keyof typeof performances];
 
   let machineState: StateFrom<typeof bookingMachine>;
   let isInitialState: boolean = false;
-  try {
-    machineState = await getMachineStateFromRequest(request);
-  } catch (e) {
-    if (e instanceof NoValidMachineState) {
-      machineState = bookingMachine.initialState;
-      isInitialState = true;
-    } else {
-      throw e;
-    }
+
+  if (!session.has("machineState")) {
+    machineState = bookingMachine.initialState;
+    session.set("machineState", machineState);
+    isInitialState = true;
+  } else {
+    machineState = session.get("machineState");
   }
 
   const currentStatePath = stateValueToPath(machineState.value);
@@ -53,8 +51,9 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
   const options: ResponseInit = {}
   if (isInitialState) {
-    options.headers = await cookies.createMachineStateCookieHeader(machineState);
-    console.log("setting cookie in loader (initial)", machineState.context);
+    options.headers = {
+      "Set-Cookie": await commitSession(session)
+    };
   }
 
   if (!(currentPath === intendedPath)) {
@@ -64,37 +63,10 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   }
 }
 
-export const action: ActionFunction = async ({ request }) => {
-  const machineState = await getMachineStateFromRequest(request);
-  console.log("machine state before action", machineState.context);
-  if (machineState === null) {
-    throw new Response("No Machine State", {
-      status: 500,
-    });
-  }
-
-  const formData = await request.formData();
-  let values = Object.fromEntries(formData);
-  console.log("root action triggered");
-
-  for (let key in values) {
-    if (key.endsWith("[]")) {
-      delete values[key];
-      values[key.slice(0, -2)] = formData.getAll(key);
-    }
-  }
-  const result = await asyncInterpret(bookingMachine, 5000, machineState, values as AnyEventObject);
-  console.log("setting cookie following event", result.context);
-  return new Response("success", {
-    status: 200,
-    headers: await cookies.createMachineStateCookieHeader(result),
-  }) 
-}
-
 export default function IndexRoute() {
   const { machineState } = useLoaderData<LoaderData>();
 
-  console.log("current context root", machineState.context);
+  console.log("current context root", machineState?.context);
 
   return (
     <div>

@@ -1,4 +1,4 @@
-import { LiveReload, Outlet } from "@remix-run/react";
+import { LiveReload, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
 
 export default function App() {
   return (
@@ -9,6 +9,8 @@ export default function App() {
       </head>
       <body style={{ background: "black", color: "white" }}>
         <Outlet />
+        <ScrollRestoration />
+        <Scripts />
         <LiveReload />
       </body>
     </html>
