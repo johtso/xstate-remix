@@ -19,6 +19,7 @@ export const machineEventAction: ActionFunction = async ({ request }) => {
     });
   }
 
+  throw new Error('oops!');
   const formData = await request.formData();
   let values = Object.fromEntries(formData);
   console.log("root action triggered");
