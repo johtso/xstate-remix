@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* body {
+  background-color: darkslategray;
+  color: white;
+} */
+
+/* input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+} */
+
+.custom-number-input input:focus {
+  outline: none !important;
+}
+
+.custom-number-input button:focus {
+  outline: none !important;
+}
+
+
+[data-part="input"] {
+  /* @apply input;
+  @apply w-16; */
+  @apply outline-none focus:outline-none text-center w-full bg-gray-300 font-semibold text-base hover:text-black focus:text-black  md:text-base cursor-default flex items-center text-gray-700;
+}
+
+/* [data-part="spin-button"] {
+  &:disabled {
+    @apply btn-disabled;
+  }
+  @apply btn;
+} */
+
+.input-container {
+  @apply flex flex-row h-10 w-full rounded-lg relative bg-transparent mt-1;
+}
+
+[data-part="spin-button"] {
+  @apply disabled:bg-gray-600 disabled:text-gray-300 bg-gray-300 text-gray-600 hover:text-gray-700 hover:bg-gray-400 h-full w-20 cursor-pointer outline-none;
+}
+
+[data-part="spin-button"]:first-of-type {
+  @apply rounded-l;
+}
+
+[data-part="spin-button"]:last-of-type {
+  @apply rounded-r;
+}
+
+[data-part="spin-button"] span {
+  @apply m-auto text-2xl font-thin;
+}
+
+[data-part="root"] {
+  @apply h-10 w-32;
+}

@@ -37,8 +37,12 @@ export const curry = <T extends (...args: any) => any>(fn: T): Curried<T> => {
     };
 }
 
-export function canEvent<TMachine extends AnyStateMachine>(machine: TMachine, state: StateFrom<TMachine>, event: EventFrom<TMachine>) {
-  const service = interpret(machine);
-  service.start(state);
-  return service.state.can(event);
+// export function canEvent<TMachine extends AnyStateMachine>(machine: TMachine, state: StateFrom<TMachine>, event: EventFrom<TMachine>) {
+//   const service = interpret(machine);
+//   service.start(state);
+//   return service.state.can(event);
+// }
+
+export function objTotal(obj: {[key: string]: number}) {
+  return Object.values(obj).reduce((acc, curr) => acc + curr, 0);
 }

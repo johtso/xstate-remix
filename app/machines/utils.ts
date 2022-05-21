@@ -1,4 +1,4 @@
-import { interpret, StateFrom, EventFrom, AnyStateMachine, AnyState, StateValue } from "xstate";
+import { interpret, StateFrom, EventFrom, AnyStateMachine, AnyState, StateValue, InterpreterFrom } from "xstate";
 import { waitFor } from "xstate/lib/waitFor";
 
 export async function asyncInterpret<TMachine extends AnyStateMachine>(
@@ -6,8 +6,8 @@ export async function asyncInterpret<TMachine extends AnyStateMachine>(
   msToWait: number,
   initialState: StateFrom<TMachine>,
   initialEvent: EventFrom<TMachine>,
-) {
-  const service = interpret(machine);
+): Promise<StateFrom<TMachine>> {
+  const service = interpret(machine) as InterpreterFrom<TMachine>;
   service.start(initialState);
   if (initialEvent) {
     service.send(initialEvent);

@@ -1,13 +1,15 @@
-import { LoaderFunction, json, redirect, ActionFunction } from "@remix-run/node";
+import { LoaderFunction, json, redirect } from "@remix-run/node";
 import { Outlet, useLoaderData } from "@remix-run/react";
-import { AnyEventObject, EventFrom, interpret, StateFrom } from "xstate";
-import * as cookies from "~/cookies";
-import { deserializeState, serializeState, stateValueToPath, asyncInterpret } from "~/machines/utils";
-import { bookingMachine } from "~/machines/booking.machine";
+import { StateFrom } from "xstate";
+import { stateValueToPath } from "~/machines/utils";
+import { bookingMachine, NavigablePaths, totalSeats, validSelections } from "~/machines/booking.machine";
 import { LoaderData, PerformanceType } from "~/types";
-import { getMachineStateFromRequest } from "~/utils";
 
 import { getSession, commitSession } from "~/sessions";
+import { useInterpretedMachine } from "~/hooks";
+import { MachineLink } from "~/components/utils";
+import { objTotal } from "~/utils";
+import clsx from "clsx";
 
 const performances = {
   "1": {
@@ -26,16 +28,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   );
 
   const performanceId = params.performanceId!;
-  // if (!Object.keys(performances).includes(performanceId)) {
-  //   throw new Response("No Performance With That ID", {
-  //     status: 404,
-  //   });
-  // }
+  if (!Object.keys(performances).includes(performanceId)) {
+    throw new Response("No Performance With That ID", {
+      status: 404,
+    });
+  }
   const performance = performances[performanceId as keyof typeof performances];
 
   let machineState: StateFrom<typeof bookingMachine>;
   let isInitialState: boolean = false;
-
+  
   if (!session.has("machineState")) {
     machineState = bookingMachine.initialState;
     session.set("machineState", machineState);
@@ -64,19 +66,58 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 }
 
 export default function IndexRoute() {
-  const { machineState } = useLoaderData<LoaderData>();
+  const machine = useInterpretedMachine();
+  machine
+  const ctx = machine.state.context;
+  const totalTickets = objTotal(ctx.tickets);
+  const displayTicketCount = (totalTickets || machine.state.value === "tickets");
 
-  console.log("current context root", machineState?.context);
+  const steps = ["seats", "tickets", "perks"] as const;
+  const futureStep = (step: typeof steps[number]) => {
+    const currentStep = steps.indexOf(machine.state.value as typeof steps[number]);
+    return steps.indexOf(step) > currentStep;
+  }
+
+  const selectionsAreValid = validSelections(ctx);
 
   return (
     <div>
       <h1>Booking Page</h1>
-      <h2>Current State</h2>
-      <pre>{ machineState.value }</pre>
+      <nav>
+        <ol className="steps">
+          <li className={clsx("step", { "step-primary": !futureStep("seats")})}>
+            <MachineLink machine={machine} to="seats">
+              SEATS <span className={clsx("selection-count seats badge", selectionsAreValid ? "btn-accent" : "btn-secondary")}>{totalSeats(ctx)}</span>
+            </MachineLink>
+          </li>
+          <li className={clsx("step", { "step-primary": !futureStep("tickets")})}>
+            <MachineLink machine={machine} to="tickets">
+              TICKETS {displayTicketCount ? (
+                <span className={clsx("selection-count seats badge", selectionsAreValid ? "btn-accent" : "btn-secondary")}>
+                  {objTotal(ctx.tickets)}
+                </span>
+              ) : null}
+            </MachineLink>
+          </li>
+          <li className={clsx("step", { "step-primary": !futureStep("perks")})}>
+            <MachineLink machine={machine} to="perks">
+              PERKS
+            </MachineLink>
+          </li>
+        </ol>
+      </nav>
       <h2>Seats</h2>
-      <pre>{ JSON.stringify(machineState?.context.seats) }</pre>
+      <pre>
+        {ctx.seats.map((selected, i) => (
+          selected ? <span key={i} className="badge">{`A${i}`}</span> : null
+        ))}
+      </pre>
       <h2>Tickets</h2>
-      <pre>{ JSON.stringify(machineState?.context.tickets) }</pre>
+      <div>
+        {Object.entries(ctx.tickets).map(([id, count]) => (
+          <span className="badge" key={id}>{`${id}: ${count}`}</span>
+        ))}
+      </div>
       <main>
         <Outlet />
       </main>
