@@ -6,4 +6,4 @@ node_modules
 .env
 
 app/styles/app.css
-*.machine.typegen.ts
+**/*.machine.typegen.ts
