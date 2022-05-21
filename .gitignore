@@ -4,3 +4,6 @@ node_modules
 /build
 /public/build
 .env
+
+app/styles/app.css
+*.machine.typegen.ts
